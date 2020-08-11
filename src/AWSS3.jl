@@ -559,7 +559,7 @@ end
 s3_list_objects(a...; kwargs...) = s3_list_objects(default_aws_config(), a...; kwargs...)
 
 """
-    s3_list_objects_v2([::AWSConfig], bucket, [path_prefix]; delimiter="/", max_items=1000)
+    s3_list_objects_v2([::AWSConfig], bucket, [path_prefix]; delimiter="/", start_after="", max_items=1000)
 
 [List Objects](http://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html)
 in `bucket` with optional `path_prefix`.
@@ -569,7 +569,7 @@ Returns an iterator of `Dict`s with keys `Key`, `LastModified`, `ETag`, `Size`,
 
 This uses the `ListObjectV2` function call.
 """
-function s3_list_objects_v2(aws::AWSS3.AWSConfig, bucket, path_prefix=""; delimiter="/", max_items=nothing)
+function s3_list_objects_v2(aws::AWSS3.AWSConfig, bucket, path_prefix=""; delimiter="/", start_after="", max_items=nothing)
     return Channel() do chnl
         more = true
         num_objects = 0
@@ -583,8 +583,11 @@ function s3_list_objects_v2(aws::AWSS3.AWSConfig, bucket, path_prefix=""; delimi
             if delimiter != ""
                 q["delimiter"] = delimiter
             end
-            if contoken ≠ ""
+            if contoken != ""
                 q["continuation-token"] = contoken
+            end
+            if start_after != ""
+                q["start-after"] = start_after
             end
             if max_items !== nothing
                 q["max-keys"] = string(max_items - num_objects)
@@ -622,18 +625,18 @@ end
 s3_list_objects_v2(a...; kwargs...) = s3_list_objects_v2(default_aws_config(), a...; kwargs...)
 
 """
-    s3_list_keys([::AWSConfig], bucket, [path_prefix])
+    s3_list_keys([::AWSConfig], bucket, [path_prefix]; delimiter="/", start_after="", max_items=1000)
 
 Like [`s3_list_objects`](@ref) but returns object keys as `Vector{String}`.
 """
-function s3_list_keys(aws::AWSConfig, bucket, path_prefix=""; a...)
+function s3_list_keys(aws::AWSConfig, a...; kwargs...)
 
     [coalesce(get(x, "Key", missing), get(x, "Prefix", missing))
-     for x in s3_list_objects(aws, bucket, path_prefix; a...)]
+     for x in s3_list_objects_v2(aws,  a...; kwargs...)]
 
 end
 
-s3_list_keys(a...) = s3_list_keys(default_aws_config(), a...)
+s3_list_keys(a...) = s3_list_keys(default_aws_config(), a...; kwargs...)
 
 
 
