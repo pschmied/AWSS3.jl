@@ -107,6 +107,18 @@ end
     end
 end
 
+@testset "List Objects v2" begin
+    for key in ["key1", "key2", "key3", "key1.copy"]
+        @test key in [o["Key"] for o in s3_list_objects_v2(aws, bucket_name)]
+    end
+end
+
+@testset "List Keys" begin
+    for key in ["key1", "key2", "key3", "key1.copy"]
+        @test key in s3_list_keys(aws, bucket_name)]
+    end
+end
+
 @testset "Object Delete" begin
     s3_delete(aws, bucket_name, "key1.copy")
     @test !("key1.copy" in [o["Key"] for o in s3_list_objects(aws, bucket_name)])
